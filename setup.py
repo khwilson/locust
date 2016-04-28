@@ -1,5 +1,6 @@
 # encoding: utf-8
 
+import itertools as its
 from setuptools import setup, find_packages, Command
 import sys, os
 
@@ -22,6 +23,12 @@ class Unit2Discover(Command):
         raise SystemExit(errno)
 
 
+def recursive_ls(package, directory):
+    return [os.path.relpath(os.path.join(root, filename), package)
+            for root, _, files in os.walk(os.path.join(package, directory))
+            for filename in files]
+print list(its.chain([recursive_ls('locust', 'static'),
+                                           recursive_ls('locust', 'templates')]))
 setup(
     name='locustio',
     version=version,
@@ -44,11 +51,12 @@ setup(
     author_email='',
     url='http://locust.io',
     license='MIT',
-    packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
-    include_package_data=True,
+    packages=['locust', 'locust.rpc'],
+    package_data={'locust': list(its.chain(recursive_ls('locust', 'static'),
+                                           recursive_ls('locust', 'templates')))},
     zip_safe=False,
-    install_requires=["gevent==1.0.1", "flask>=0.10.1", "requests>=2.9.1", "msgpack-python>=0.4.2"],
-    tests_require=['unittest2', 'mock', 'pyzmq'],
+    install_requires=open('requirements.in').read(),
+    tests_require=open('requirements.testing.in').read(),
     entry_points={
         'console_scripts': [
             'locust = locust.main:main',
